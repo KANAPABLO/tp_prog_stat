@@ -1,0 +1,96 @@
+---
+title: "Analyse des ventes"
+author: "Souleymane Ndiaye"
+date: "2024-12-18"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Charger ggplot2
+
+```{r}
+library(ggplot2)
+```
+
+## Fonction pour lire les données
+
+Cette fonction permet de lire les fichiers CSV contenus dans un dossier. Les fichiers doivent être nommés selon le format `ventesJJ-MM-AAAA.csv`.
+
+```{r}
+lire_donnees <- function(dossier) {
+  jours <- c("01", "02", "03", "04", "05", "06", "07", "08", "09", "10", "11", "12", "13", "14", "15", "16", "17", "18", "19", "20", "21", "22", "23", "24", "25", "26", "27", "28", "29", "30", "31")
+  mois <- c("01", "02", "03", "04", "05", "06", "07", "08", "09", "10", "11", "12")
+  annees <- 2020:2024
+  donnees <- data.frame() # Créer un dataframe vide
+
+  for (annee in annees) {
+    for (mois_actuel in mois) {
+      for (jour_actuel in jours) {
+        nom_fichier <- paste0("ventes", jour_actuel, "-", mois_actuel, "-", annee, ".csv")
+        chemin_fichier <- paste0(dossier, "/", nom_fichier) # Construire le chemin complet
+        if (file.exists(chemin_fichier)) { # Vérifier si le fichier existe
+          cat("Chargement du fichier :", chemin_fichier, "\n") # Debug
+          data <- read.csv(chemin_fichier)
+          colnames(data) <- c("ID", "date", "annee", "mois", "jour", "semaine", "produit", "type_vente", "nb_de_ventes") # Renommer les colonnes
+          donnees <- rbind(donnees, data) # Ajouter les données au dataframe
+        }
+      }
+    }
+  }
+  return(donnees)
+}
+```
+
+## Fonction pour filtrer les données
+
+Cette fonction filtre les données entre deux dates spécifiées.
+
+```{r}
+filtrer_donnees <- function(donnees, date_debut, date_fin) {
+  donnees <- as.data.frame(donnees) # S'assurer que c'est un dataframe
+  donnees$date <- as.Date(donnees$date, format = "%Y-%m-%d") # Convertir en format Date
+  donnees_filtrees <- donnees[donnees$date >= as.Date(date_debut) & donnees$date <= as.Date(date_fin), ]
+  return(donnees_filtrees)
+}
+```
+
+## Fonction pour visualiser les données
+
+Cette fonction crée un graphique montrant l'évolution des ventes, avec des mois-clés affichés sur l'axe des abscisses.
+
+```{r}
+visualiser_donnees <- function(donnees) {
+  donnees <- as.data.frame(donnees) # S'assurer que c'est un dataframe
+  donnees$mois_annee <- format(donnees$date, "%Y-%m") # Extraire mois et année
+
+  if (nrow(donnees) > 0) {
+    ggplot(donnees, aes(x = date, y = nb_de_ventes)) +
+      geom_line(color = "blue") +
+      scale_x_date(date_labels = "%b %Y", breaks = seq(min(donnees$date), max(donnees$date), by = "6 months")) +
+      labs(
+        title = "Évolution des ventes",
+        x = "Mois",
+        y = "Nombre de ventes"
+      ) +
+      theme(axis.text.x = element_text(angle = 45, hjust = 1))
+  } else {
+    message("Aucune donnée à afficher. Vérifiez les dates ou les données filtrées.")
+  }
+}
+```
+
+## Exemple d'utilisation
+
+Définir le chemin vers le dossier contenant les fichiers CSV et exécuter les fonctions pour charger, filtrer et visualiser les données.
+
+```{r}
+chemin_dossier <- "C:\\Users\\nsoul\\Downloads\\exam_data" # Chemin vers le dossier
+
+donnees <- lire_donnees(chemin_dossier) # Lire les données
+donnees_filtrees <- filtrer_donnees(donnees, "2020-01-01", "2024-12-31") # Filtrer les données
+
+visualiser_donnees(donnees_filtrees) # Visualiser les données avec les mois
+```
